@@ -1,0 +1,127 @@
+<!--TODO: add functionality for dynamic username and repo, count issues, hyperlink urls in table, beautify -->
+
+<label value="Username"></label><textarea id="username"></textarea>
+<label value="Reporistory"></label><textarea id="repo"></textarea>
+
+<input type="button" value="Generate Table" onclick="main()" />
+<hr />
+<div id="sourceTable"></div>
+<div id="forkedTable"></div>
+
+<script type="text/javascript">
+
+const BASE_URL = 'https://api.github.com';
+var GIT_USERNAME='calaldees'
+var GIT_REPO='frameworks_and_languages_module'
+var SOURCE_REPO_DATA;
+var FORKED_REPO_DATA;
+var FORKED_REPOS_TABLE = new Array();
+FORKED_REPOS_TABLE.push(["Index","Username", "Git URL","Created","Updated","Commits","Issues"]);
+
+function main()
+{
+
+    SOURCE_REPO_DATA=get_repo_data(GIT_USERNAME+'/'+GIT_REPO+'/forks');
+    get_forked_repo_names();
+    GenerateTable();
+}
+
+function get_repo_data(path)
+{
+    let result = []
+    var REPO_OBJ=JSON.parse(httpGet(BASE_URL+'/repos/'+path));
+    Object.keys(REPO_OBJ).forEach( key => {
+            result.push(REPO_OBJ[key])
+        });
+    return result;
+}
+
+function get_forked_repo_names()
+{
+    for(i=1; i< SOURCE_REPO_DATA.length;i++)
+    {   
+        var forked_path=SOURCE_REPO_DATA[i-1].full_name;
+        var forked_username=forked_path.substring(0,forked_path.indexOf("/"));
+        var forked_repo_address="https://github.com/"+forked_path
+        FORKED_REPO_DATA=get_repo_data(forked_path)
+        var commits=get_all_commits_count(forked_path)
+
+        console.log(FORKED_REPO_DATA)
+
+        created=FORKED_REPO_DATA[47];
+        updated=FORKED_REPO_DATA[48];
+        FORKED_REPOS_TABLE.push([i, forked_username, forked_repo_address,created,updated,commits]);
+    }
+}
+
+function GenerateTable() 
+{
+    //Create a HTML Table element.
+    var table = document.createElement("TABLE");
+    table.border = "1";
+
+    //Get the count of columns.
+    var columnCount = FORKED_REPOS_TABLE[0].length;
+
+    //Add the header row.
+    var row = table.insertRow(-1);
+    for (var i = 0; i < columnCount; i++) {
+        var headerCell = document.createElement("TH");
+        headerCell.innerHTML = FORKED_REPOS_TABLE[0][i];
+        row.appendChild(headerCell);
+    }
+
+    //Add the data rows.
+    for (var i = 1; i < FORKED_REPOS_TABLE.length; i++) {
+        row = table.insertRow(-1);
+        for (var j = 0; j < columnCount; j++) {
+            var cell = row.insertCell(-1);
+            cell.innerHTML = FORKED_REPOS_TABLE[i][j];
+        }
+    }
+
+    var dvTable = document.getElementById("forkedTable");
+    dvTable.innerHTML = "";
+    dvTable.appendChild(table);
+}
+
+function httpGet(theUrl, return_headers) {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open("GET", theUrl, false); // false for synchronous request
+        xmlHttp.send(null);
+        if (return_headers) {
+            return xmlHttp
+        }
+        return xmlHttp.responseText;
+    }
+
+/*https://gist.github.com/yershalom/a7c08f9441d1aadb13777bce4c7cdc3b?permalink_comment_id=3278742#gistcomment-3278742*/
+
+function get_all_commits_count(path) 
+{
+    let first_commit = get_first_commit(path);
+    let compare_url = BASE_URL + '/repos/' + path+ '/compare/' + first_commit + '...' + 'main';
+    let commit_req = httpGet(compare_url);
+    let commit_count = JSON.parse(commit_req)['total_commits'] + 1;
+    console.log('Commit Count: ', commit_count);
+    return commit_count
+}
+
+function get_first_commit(path) 
+{
+    let url = BASE_URL + '/repos/' +path+ '/commits';
+    let req = httpGet(url, true);
+    let first_commit_hash = '';
+    if (req.getResponseHeader('Link')) {
+        let page_url = req.getResponseHeader('Link').split(',')[1].split(';')[0].split('<')[1].split('>')[0];
+        let req_last_commit = httpGet(page_url);
+        let first_commit = JSON.parse(req_last_commit);
+        first_commit_hash = first_commit[first_commit.length - 1]['sha']
+    } else {
+        let first_commit = JSON.parse(req.responseText);
+        first_commit_hash = first_commit[first_commit.length - 1]['sha'];
+    }
+    return first_commit_hash;
+}
+
+</script>
