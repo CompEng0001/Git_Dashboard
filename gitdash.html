@@ -9,7 +9,7 @@
 <div id="forkedTable"></div>
 
 <script type="text/javascript">
-
+/*https://docs.github.com/en/rest/repos/repos#get-a-repository*/
 const BASE_URL = 'https://api.github.com';
 var GIT_USERNAME;
 var GIT_REPO;
@@ -20,8 +20,8 @@ FORKED_REPOS_TABLE.push(["Index","Username", "Git URL","Created","Updated","Comm
 
 function main()
 {
-    GIT_USERNAME=document.getElementById("username").value
-    GIT_REPO=document.getElementById("repo").value
+    GIT_USERNAME='caldees' //document.getElementById("username").value
+    GIT_REPO='frameworks_and_languages_module'//document.getElementById("repo").value
 
     SOURCE_REPO_DATA=get_repo_data(GIT_USERNAME+'/'+GIT_REPO+'/forks');
     get_forked_repo_names();
